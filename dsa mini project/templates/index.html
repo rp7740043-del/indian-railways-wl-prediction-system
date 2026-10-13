@@ -1,0 +1,179 @@
+{% extends 'base.html' %}
+
+{% block title %}Home — WL Predictor | Railway Waitlist Confirmation & Analytics{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section" id="heroSection">
+    <div class="hero-grid">
+        <div class="hero-content">
+            <div class="hero-badge">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                <span>AI &amp; Statistical Railway Waitlist Insights</span>
+            </div>
+            <h1 class="hero-title">
+                Will Your Waitlisted Ticket Get <span class="highlight">Confirmed</span>?
+            </h1>
+            <p class="hero-subtitle">
+                Estimate the chance that a waitlisted railway ticket becomes RAC or Confirmed before the train departs.
+            </p>
+            <div class="hero-actions">
+                <a href="{{ url_for('predict') }}" class="btn btn-primary" id="btnCheckTicket">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <span>Check My Ticket</span>
+                </a>
+                <a href="{{ url_for('movement') }}" class="btn btn-outline-light" id="btnViewMovement">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                    <span>Track Daily Movement</span>
+                </a>
+            </div>
+        </div>
+
+        <div class="hero-image-wrapper">
+            <img src="{{ url_for('static', filename='images/hero_train.jpg') }}" alt="Modern passenger train on railway track at sunrise" class="hero-img" loading="lazy">
+        </div>
+    </div>
+</section>
+
+<!-- System Live Overview Stats Strip -->
+<div class="stats-strip" id="statsStrip">
+    <div class="stat-pill">
+        <div class="stat-pill-icon blue">🎫</div>
+        <div class="stat-pill-info">
+            <div class="value">{{ summary.total_tickets }}</div>
+            <div class="label">Tickets Checked</div>
+        </div>
+    </div>
+    <div class="stat-pill">
+        <div class="stat-pill-icon green">✅</div>
+        <div class="stat-pill-info">
+            <div class="value">{{ summary.confirmed_count }}</div>
+            <div class="label">Confirmed History</div>
+        </div>
+    </div>
+    <div class="stat-pill">
+        <div class="stat-pill-icon amber">💺</div>
+        <div class="stat-pill-info">
+            <div class="value">{{ summary.rac_count }}</div>
+            <div class="label">RAC Clearances</div>
+        </div>
+    </div>
+    <div class="stat-pill">
+        <div class="stat-pill-icon red">📉</div>
+        <div class="stat-pill-info">
+            <div class="value">{{ summary.avg_cancellations }} /day</div>
+            <div class="label">Avg Cancellations</div>
+        </div>
+    </div>
+</div>
+
+<!-- Rail Track Divider -->
+<div class="rail-track-divider">
+    <span class="rail-track-badge">Three Simple Steps</span>
+</div>
+
+<!-- 3 Step Cards Section -->
+<section class="steps-section" id="stepsSection">
+    <div class="section-header">
+        <h2>How WL Predictor Works</h2>
+        <p>A transparent, beginner-friendly system designed to take the guesswork out of waitlisted train journeys.</p>
+    </div>
+
+    <div class="steps-grid">
+        <!-- Step 1 -->
+        <div class="step-card" id="stepCard1">
+            <div class="step-number">1</div>
+            <div class="step-icon">
+                <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                    <line x1="16" y1="2" x2="16" y2="6"/>
+                    <line x1="8" y1="2" x2="8" y2="6"/>
+                    <line x1="3" y1="10" x2="21" y2="10"/>
+                </svg>
+            </div>
+            <h3>1. Enter Details</h3>
+            <p>Input your train number, travel class (SL, 3A, 2A, 1A, CC), quota, current waitlist number, and days left before travel.</p>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="step-card" id="stepCard2">
+            <div class="step-number">2</div>
+            <div class="step-icon">
+                <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                    <polyline points="22 4 12 14.01 9 11.01"/>
+                </svg>
+            </div>
+            <h3>2. See Chance</h3>
+            <p>Get an instant confirmation probability (High 70%+, Medium 40-69%, Low below 40%), visual progress bar, and formula breakdown.</p>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="step-card" id="stepCard3">
+            <div class="step-number">3</div>
+            <div class="step-icon">
+                <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                </svg>
+            </div>
+            <h3>3. Track Daily</h3>
+            <p>Log daily status changes like WL 35 &rarr; WL 24 &rarr; WL 15 on an interactive timeline and watch the clearance curve bend toward RAC.</p>
+        </div>
+    </div>
+</section>
+
+<!-- Recent Predictions Teaser -->
+{% if recent_tickets %}
+<div class="card" style="margin-top: 30px; margin-bottom: 20px;" id="recentPredictionsHome">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;">
+        <div>
+            <h3 class="card-title">Recent Tickets Analyzed</h3>
+            <p class="card-subtitle" style="margin-bottom: 0;">Latest waitlisted journeys checked by users.</p>
+        </div>
+        <a href="{{ url_for('analytics') }}" class="btn btn-secondary btn-sm">View All Analytics &rarr;</a>
+    </div>
+
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Train No</th>
+                    <th>Journey Date</th>
+                    <th>Class</th>
+                    <th>Quota</th>
+                    <th>Current WL</th>
+                    <th>Days Left</th>
+                    <th>Probability</th>
+                    <th>Category</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for t in recent_tickets %}
+                <tr>
+                    <td><strong>{{ t.train_no }}</strong></td>
+                    <td>{{ t.journey_date }}</td>
+                    <td><span style="font-weight: 600; color: var(--rail-blue);">{{ t.travel_class }}</span></td>
+                    <td>{{ t.quota }}</td>
+                    <td><strong style="color: var(--rail-blue-dark);">WL {{ t.current_wl }}</strong></td>
+                    <td>{{ t.days_left }} days</td>
+                    <td><strong>{{ t.probability }}%</strong></td>
+                    <td>
+                        <span class="category-badge {% if t.category == 'High' %}success{% elif t.category == 'Medium' %}warning{% else %}danger{% endif %}" style="padding: 4px 10px; font-size: 0.8rem;">
+                            {{ t.category }}
+                        </span>
+                    </td>
+                    <td>
+                        <a href="{{ url_for('movement', ticket_id=t.id) }}" class="btn btn-secondary btn-sm" style="padding: 4px 10px;">
+                            Track &rarr;
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}

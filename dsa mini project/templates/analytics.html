@@ -1,0 +1,151 @@
+{% extends 'base.html' %}
+
+{% block title %}System Analytics &amp; Cancellation Trends — WL Predictor{% endblock %}
+
+{% block content %}
+<!-- Analytics Header Banner with Railway Signal Image -->
+<div class="analytics-hero-banner" id="analyticsBanner">
+    <img src="{{ url_for('static', filename='images/analytics_signal.jpg') }}" alt="Railway track junction with glowing green and amber signals at twilight" class="analytics-banner-img" loading="lazy">
+    <div class="analytics-banner-overlay">
+        <h1>Railway Network Analytics</h1>
+        <p>Comprehensive cancellation metrics, waitlist clearance statistics, and historical confirmation distribution.</p>
+    </div>
+</div>
+
+<!-- 5 Summary KPI Cards -->
+<div class="analytics-cards-grid" id="analyticsKpiGrid">
+    <div class="analytics-card blue">
+        <div class="number">{{ summary.total_tickets }}</div>
+        <div class="title">Total Tickets Checked</div>
+    </div>
+
+    <div class="analytics-card green">
+        <div class="number">{{ summary.confirmed_count }}</div>
+        <div class="title">Confirmed (CNF)</div>
+    </div>
+
+    <div class="analytics-card amber">
+        <div class="number">{{ summary.rac_count }}</div>
+        <div class="title">RAC Clearances</div>
+    </div>
+
+    <div class="analytics-card red">
+        <div class="number">{{ summary.waiting_count }}</div>
+        <div class="title">Still Waiting</div>
+    </div>
+
+    <div class="analytics-card purple">
+        <div class="number">{{ summary.avg_cancellations }}</div>
+        <div class="title">Avg Cancellations / Day</div>
+    </div>
+</div>
+
+<!-- Two Interactive Charts -->
+<div class="charts-grid">
+    <!-- Bar Chart: Daily Cancellations -->
+    <div class="chart-card">
+        <div class="chart-header">
+            <div>
+                <h3 class="card-title" style="margin-bottom: 2px;">Daily Passenger Cancellations</h3>
+                <span style="font-size: 0.85rem; color: var(--text-muted);">Seats released per day across monitored routes</span>
+            </div>
+            <span class="badge" style="background: var(--rail-blue-soft); color: var(--rail-blue); padding: 4px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: 600;">
+                Bar Chart
+            </span>
+        </div>
+
+        <div class="chart-wrapper">
+            <canvas id="cancellationsChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Doughnut Chart: Past Ticket Outcomes -->
+    <div class="chart-card">
+        <div class="chart-header">
+            <div>
+                <h3 class="card-title" style="margin-bottom: 2px;">Historical Final Outcomes</h3>
+                <span style="font-size: 0.85rem; color: var(--text-muted);">Distribution of Confirmed vs RAC vs Waiting</span>
+            </div>
+            <span class="badge" style="background: var(--signal-green-bg); color: var(--signal-green); padding: 4px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: 600;">
+                Outcomes Share
+            </span>
+        </div>
+
+        <div class="chart-wrapper">
+            <canvas id="outcomesChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Table of Recent Predictions -->
+<div class="table-card" id="recentPredictionsTable">
+    <div class="table-header-bar">
+        <div>
+            <h3 style="font-size: 1.15rem; color: var(--rail-blue-dark); font-weight: 700; margin: 0;">Recent Ticket Predictions Log</h3>
+            <span style="font-size: 0.85rem; color: var(--text-muted);">Records saved in the SQLite database</span>
+        </div>
+        <a href="{{ url_for('predict') }}" class="btn btn-primary btn-sm">+ New Prediction</a>
+    </div>
+
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Train No</th>
+                    <th>Journey Date</th>
+                    <th>Class</th>
+                    <th>Quota</th>
+                    <th>Current WL</th>
+                    <th>Days Left</th>
+                    <th>Probability</th>
+                    <th>Category</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if recent_tickets %}
+                    {% for t in recent_tickets %}
+                    <tr>
+                        <td>#{{ t.id }}</td>
+                        <td><strong>{{ t.train_no }}</strong></td>
+                        <td>{{ t.journey_date }}</td>
+                        <td><span style="font-weight: 600; color: var(--rail-blue);">{{ t.travel_class }}</span></td>
+                        <td>{{ t.quota }}</td>
+                        <td><strong style="color: var(--rail-blue-dark);">WL {{ t.current_wl }}</strong></td>
+                        <td>{{ t.days_left }}d</td>
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <strong style="color: {% if t.category == 'High' %}var(--signal-green){% elif t.category == 'Medium' %}var(--signal-amber){% else %}var(--signal-red){% endif %};">
+                                    {{ t.probability }}%
+                                </strong>
+                                <div style="width: 50px; height: 6px; background: #E2E8F0; border-radius: 4px; overflow: hidden;">
+                                    <div style="height: 100%; width: {{ t.probability }}%; background: {% if t.category == 'High' %}var(--signal-green){% elif t.category == 'Medium' %}var(--signal-amber){% else %}var(--signal-red){% endif %};"></div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="category-badge {% if t.category == 'High' %}success{% elif t.category == 'Medium' %}warning{% else %}danger{% endif %}" style="padding: 4px 10px; font-size: 0.78rem;">
+                                {{ t.category }}
+                            </span>
+                        </td>
+                        <td>
+                            <a href="{{ url_for('movement', ticket_id=t.id) }}" class="btn btn-secondary btn-sm" style="padding: 4px 10px; font-size: 0.8rem;">
+                                Track &rarr;
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="10" style="text-align: center; color: var(--text-muted); padding: 30px;">
+                            No prediction records available yet.
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}

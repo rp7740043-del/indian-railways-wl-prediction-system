@@ -1,0 +1,1153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WL Predictor — Railway Waitlist Confirmation & Daily Analytics</title>
+    <meta name="description" content="Instant railway waitlist confirmation prediction, daily status tracking, and cancellation analytics.">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+    <style>
+        :root {
+            --rail-blue: #0B3C5D;
+            --rail-blue-dark: #07263A;
+            --rail-blue-light: #1D5D8A;
+            --rail-blue-soft: #EBF3F8;
+            --signal-green: #2E7D32;
+            --signal-green-bg: #E8F5E9;
+            --signal-amber: #E65100;
+            --signal-amber-bg: #FFF3E0;
+            --signal-red: #D32F2F;
+            --signal-red-bg: #FFEBEE;
+            --gold-accent: #F59E0B;
+            --bg-page: #F4F7F9;
+            --bg-card: #FFFFFF;
+            --bg-subtle: #F8FAFC;
+            --text-primary: #1E293B;
+            --text-secondary: #475569;
+            --text-muted: #64748B;
+            --border-color: #E2E8F0;
+            --border-light: #EDF2F7;
+            --font-heading: 'Poppins', -apple-system, sans-serif;
+            --font-body: 'Inter', -apple-system, sans-serif;
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --radius-xl: 20px;
+            --shadow-sm: 0 2px 4px rgba(11, 60, 93, 0.04);
+            --shadow-md: 0 6px 16px rgba(11, 60, 93, 0.08);
+            --shadow-lg: 0 14px 30px rgba(11, 60, 93, 0.12);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: var(--font-body);
+            background-color: var(--bg-page);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        h1, h2, h3, h4 { font-family: var(--font-heading); color: var(--rail-blue-dark); line-height: 1.25; }
+        a { color: var(--rail-blue-light); text-decoration: none; cursor: pointer; }
+
+        .container { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+
+        /* Announcement Bar */
+        .top-notice-strip {
+            background-color: var(--rail-blue-dark);
+            color: #CBD5E1;
+            font-size: 0.82rem;
+            padding: 6px 0;
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .top-notice-strip .highlight { color: var(--gold-accent); font-weight: 600; }
+
+        /* Navigation Bar */
+        .navbar {
+            background-color: #FFFFFF;
+            border-bottom: 2px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: var(--shadow-sm);
+        }
+        .nav-container { display: flex; justify-content: space-between; align-items: center; height: 72px; }
+        .brand-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--rail-blue);
+            font-family: var(--font-heading);
+            font-weight: 700;
+            font-size: 1.35rem;
+            text-decoration: none;
+        }
+        .brand-logo svg { color: var(--rail-blue); }
+        .brand-logo span.accent { color: var(--gold-accent); }
+        .nav-links { display: flex; list-style: none; gap: 8px; align-items: center; }
+        .nav-link {
+            font-weight: 600;
+            color: var(--text-secondary);
+            padding: 8px 16px;
+            border-radius: var(--radius-sm);
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+        }
+        .nav-link:hover { color: var(--rail-blue); background-color: var(--rail-blue-soft); }
+        .nav-link.active { color: #FFFFFF; background-color: var(--rail-blue); }
+        .nav-btn-highlight {
+            background: linear-gradient(135deg, var(--rail-blue) 0%, var(--rail-blue-light) 100%);
+            color: #FFFFFF !important;
+            padding: 9px 20px;
+            border-radius: var(--radius-md);
+            box-shadow: 0 4px 10px rgba(11, 60, 93, 0.2);
+            font-weight: 600;
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 24px;
+            font-family: var(--font-heading);
+            font-size: 0.95rem;
+            font-weight: 600;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            border: none;
+            transition: all 0.25s ease;
+            text-decoration: none;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, var(--rail-blue) 0%, var(--rail-blue-light) 100%);
+            color: #FFFFFF;
+            box-shadow: 0 6px 16px rgba(11, 60, 93, 0.25);
+        }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(11, 60, 93, 0.35); }
+        .btn-secondary { background: #FFFFFF; color: var(--rail-blue); border: 1.5px solid var(--rail-blue); }
+        .btn-secondary:hover { background: var(--rail-blue-soft); }
+        .btn-outline-light { background: rgba(255,255,255,0.15); color: #FFFFFF; border: 1.5px solid rgba(255,255,255,0.4); }
+        .btn-outline-light:hover { background: #FFFFFF; color: var(--rail-blue); }
+        .btn-sm { padding: 6px 14px; font-size: 0.85rem; border-radius: var(--radius-sm); }
+
+        /* Rail Track Divider */
+        .rail-track-divider {
+            position: relative;
+            height: 20px;
+            margin: 36px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .rail-track-divider::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0; right: 0;
+            height: 4px;
+            background: repeating-linear-gradient(to right, var(--rail-blue) 0, var(--rail-blue) 12px, transparent 12px, transparent 20px);
+            opacity: 0.25;
+        }
+        .rail-track-divider::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0; right: 0;
+            height: 1px;
+            background-color: var(--rail-blue);
+            opacity: 0.4;
+        }
+        .rail-track-badge {
+            position: relative;
+            z-index: 2;
+            background: #FFFFFF;
+            border: 1px solid var(--border-color);
+            padding: 3px 14px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--rail-blue);
+            text-transform: uppercase;
+        }
+
+        /* Cards */
+        .card {
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-md);
+            padding: 28px;
+            margin-bottom: 24px;
+        }
+        .card-title { font-size: 1.3rem; margin-bottom: 6px; }
+        .card-subtitle { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 20px; }
+
+        /* Hero */
+        .hero-section {
+            background: linear-gradient(135deg, var(--rail-blue-dark) 0%, var(--rail-blue) 100%);
+            color: #FFFFFF;
+            border-radius: var(--radius-xl);
+            overflow: hidden;
+            margin: 28px 0 20px 0;
+            box-shadow: var(--shadow-lg);
+        }
+        .hero-grid { display: grid; grid-template-columns: 1.15fr 0.85fr; min-height: 440px; align-items: center; }
+        .hero-content { padding: 45px; }
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.12);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            color: var(--gold-accent);
+            margin-bottom: 16px;
+        }
+        .hero-title { font-size: 2.5rem; color: #FFFFFF; line-height: 1.15; margin-bottom: 14px; }
+        .hero-title span.highlight { color: var(--gold-accent); }
+        .hero-subtitle { font-size: 1.1rem; color: #E2E8F0; margin-bottom: 28px; }
+        .hero-image-wrapper { height: 100%; min-height: 440px; position: relative; }
+        .hero-img { width: 100%; height: 100%; object-fit: cover; }
+        .hero-image-wrapper::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to right, var(--rail-blue-dark) 0%, transparent 40%);
+        }
+
+        /* Step Cards */
+        .steps-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+        .step-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 30px 22px;
+            text-align: center;
+            position: relative;
+            box-shadow: var(--shadow-sm);
+            transition: all 0.3s ease;
+        }
+        .step-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-md); border-color: var(--rail-blue-light); }
+        .step-number {
+            position: absolute;
+            top: -14px; left: 24px;
+            background: var(--rail-blue);
+            color: #FFFFFF;
+            font-weight: 700;
+            width: 28px; height: 28px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .step-icon {
+            width: 60px; height: 60px;
+            border-radius: 50%;
+            background: var(--rail-blue-soft);
+            color: var(--rail-blue);
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 16px auto;
+            font-size: 1.6rem;
+        }
+
+        /* Forms */
+        .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .form-group { margin-bottom: 18px; }
+        .form-label { display: block; font-weight: 600; font-size: 0.9rem; margin-bottom: 6px; color: var(--rail-blue-dark); }
+        .form-control, .form-select {
+            width: 100%;
+            padding: 12px 14px;
+            font-family: var(--font-body);
+            font-size: 0.95rem;
+            border: 1.5px solid var(--border-color);
+            border-radius: var(--radius-md);
+            background: #FFFFFF;
+        }
+        .form-control:focus, .form-select:focus { outline: none; border-color: var(--rail-blue-light); box-shadow: 0 0 0 3px rgba(11, 60, 93, 0.15); }
+        .form-hint { font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; }
+
+        /* Badges & Progress */
+        .category-badge {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 6px 16px; border-radius: 30px;
+            font-size: 0.9rem; font-weight: 700; text-transform: uppercase;
+        }
+        .category-badge.success { background: var(--signal-green-bg); color: var(--signal-green); border: 1.5px solid var(--signal-green); }
+        .category-badge.warning { background: var(--signal-amber-bg); color: var(--signal-amber); border: 1.5px solid var(--signal-amber); }
+        .category-badge.danger { background: var(--signal-red-bg); color: var(--signal-red); border: 1.5px solid var(--signal-red); }
+
+        .progress-container { background: #E2E8F0; border-radius: 12px; height: 18px; overflow: hidden; margin-bottom: 16px; }
+        .progress-bar-fill { height: 100%; border-radius: 12px; transition: width 0.8s ease; }
+        .progress-bar-fill.success { background: linear-gradient(90deg, #43A047, #2E7D32); }
+        .progress-bar-fill.warning { background: linear-gradient(90deg, #FB8C00, #E65100); }
+        .progress-bar-fill.danger { background: linear-gradient(90deg, #E53935, #C62828); }
+
+        /* Timeline Flow */
+        .timeline-flow { display: flex; align-items: center; flex-wrap: wrap; gap: 14px; padding: 14px 0; }
+        .timeline-node {
+            background: var(--rail-blue-soft);
+            border: 2px solid var(--rail-blue);
+            border-radius: var(--radius-md);
+            padding: 10px 18px;
+            text-align: center;
+        }
+        .timeline-node.latest { background: var(--signal-green-bg); border-color: var(--signal-green); }
+        .timeline-node .wl-val { font-size: 1.25rem; font-weight: 800; }
+        .timeline-node .date { font-size: 0.75rem; color: var(--text-muted); }
+        .timeline-arrow { color: var(--rail-blue-light); font-size: 1.3rem; font-weight: 700; }
+
+        /* Analytics KPI Cards */
+        .analytics-cards-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; margin-bottom: 28px; }
+        .analytics-card { background: #FFFFFF; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 18px; text-align: center; }
+        .analytics-card .number { font-size: 2rem; font-weight: 800; font-family: var(--font-heading); margin-bottom: 4px; }
+        .analytics-card.blue .number { color: var(--rail-blue); }
+        .analytics-card.green .number { color: var(--signal-green); }
+        .analytics-card.amber .number { color: var(--signal-amber); }
+        .analytics-card.red .number { color: var(--signal-red); }
+        .analytics-card.purple .number { color: #6D28D9; }
+        .analytics-card .title { font-size: 0.78rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; }
+
+        .charts-grid { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 24px; margin-bottom: 28px; }
+        .chart-wrapper { position: relative; height: 280px; width: 100%; }
+
+        /* Table */
+        .data-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.92rem; }
+        .data-table th { background: var(--bg-subtle); color: var(--rail-blue-dark); font-weight: 700; padding: 12px 16px; border-bottom: 2px solid var(--border-color); }
+        .data-table td { padding: 12px 16px; border-bottom: 1px solid var(--border-color); }
+        .data-table tr:hover td { background: var(--rail-blue-soft); }
+
+        /* Formula Breakdown */
+        .breakdown-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+        .breakdown-item { background: var(--bg-subtle); border: 1px solid var(--border-light); border-radius: var(--radius-sm); padding: 12px; }
+        .breakdown-item .label { font-size: 0.75rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; }
+        .breakdown-item .val { font-size: 1.2rem; font-weight: 700; margin-top: 4px; }
+        .breakdown-item .desc { font-size: 0.75rem; color: var(--text-secondary); margin-top: 2px; }
+        .pos { color: var(--signal-green); }
+        .neg { color: var(--signal-red); }
+        .neu { color: var(--rail-blue); }
+
+        /* SPA Tab Visibility */
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* Disclaimer */
+        .disclaimer-banner {
+            background: #FEF3C7;
+            border: 1.5px solid #F59E0B;
+            border-radius: var(--radius-md);
+            padding: 18px 22px;
+            color: #92400E;
+            margin: 28px 0;
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+        }
+
+        /* Footer */
+        .footer { margin-top: auto; background: var(--rail-blue-dark); color: #94A3B8; padding: 36px 0 20px 0; font-size: 0.88rem; }
+        .footer a { color: #CBD5E1; }
+        .footer a:hover { color: var(--gold-accent); }
+
+        @media (max-width: 900px) {
+            .hero-grid { grid-template-columns: 1fr; }
+            .hero-image-wrapper { display: none; }
+            .steps-grid, .charts-grid, .breakdown-grid { grid-template-columns: 1fr; }
+            .analytics-cards-grid { grid-template-columns: repeat(2, 1fr); }
+            .form-grid-2 { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Top Announcement Strip -->
+    <div class="top-notice-strip">
+        <div class="container">
+            <span>Statistical Railway Waitlist Prediction System &bull; <strong class="highlight">Estimate, Not A Guarantee</strong> &bull; Netlify Ready</span>
+        </div>
+    </div>
+
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="container nav-container">
+            <a class="brand-logo" onclick="switchTab('home')">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="4" y="3" width="16" height="16" rx="3"/><path d="M4 11h16"/><circle cx="8" cy="15" r="1"/><circle cx="16" cy="15" r="1"/><path d="M6 19h12"/>
+                </svg>
+                <span>WL<span class="accent">Predictor</span></span>
+            </a>
+
+            <ul class="nav-links">
+                <li><a class="nav-link active" id="nav-home" onclick="switchTab('home')">Home</a></li>
+                <li><a class="nav-link" id="nav-predict" onclick="switchTab('predict')">Predict Ticket</a></li>
+                <li><a class="nav-link" id="nav-movement" onclick="switchTab('movement')">WL Movement</a></li>
+                <li><a class="nav-link" id="nav-analytics" onclick="switchTab('analytics')">Analytics</a></li>
+                <li><a class="nav-link" id="nav-about" onclick="switchTab('about')">About</a></li>
+                <li><a class="nav-link nav-btn-highlight" onclick="switchTab('predict')">Check My Ticket</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <main class="container">
+
+        <!-- ================= PAGE 1: HOME ================= -->
+        <section id="tab-home" class="tab-content active">
+            <div class="hero-section">
+                <div class="hero-grid">
+                    <div class="hero-content">
+                        <div class="hero-badge">
+                            <span>● Live Railway Mathematical Predictor</span>
+                        </div>
+                        <h1 class="hero-title">Will Your Waitlisted Ticket Get <span class="highlight">Confirmed</span>?</h1>
+                        <p class="hero-subtitle">Estimate the chance that a waitlisted railway ticket becomes RAC or Confirmed before the train departs.</p>
+                        <div style="display: flex; gap: 14px; flex-wrap: wrap;">
+                            <button class="btn btn-primary" onclick="switchTab('predict')">Check My Ticket</button>
+                            <button class="btn btn-outline-light" onclick="switchTab('movement')">Track Daily Movement</button>
+                        </div>
+                    </div>
+                    <div class="hero-image-wrapper">
+                        <img src="static/images/hero_train.jpg" 
+                             onerror="this.src='https://images.unsplash.com/photo-1474487548417-781cb71495f3?auto=format&fit=crop&w=1200&q=80'" 
+                             alt="Train at sunrise" class="hero-img">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats Strip -->
+            <div class="analytics-cards-grid" style="margin-top: 20px;">
+                <div class="analytics-card blue"><div class="number" id="home-total-tickets">4</div><div class="title">Tickets Checked</div></div>
+                <div class="analytics-card green"><div class="number" id="home-cnf-count">22</div><div class="title">Confirmed Samples</div></div>
+                <div class="analytics-card amber"><div class="number" id="home-rac-count">8</div><div class="title">RAC Clearances</div></div>
+                <div class="analytics-card red"><div class="number" id="home-waiting-count">8</div><div class="title">Waiting Samples</div></div>
+                <div class="analytics-card purple"><div class="number" id="home-canc-avg">18.4 /d</div><div class="title">Avg Cancellations</div></div>
+            </div>
+
+            <div class="rail-track-divider"><span class="rail-track-badge">Three Simple Steps</span></div>
+
+            <!-- 3 Step Cards -->
+            <div class="steps-grid">
+                <div class="step-card">
+                    <div class="step-number">1</div>
+                    <div class="step-icon">📋</div>
+                    <h3>1. Enter Details</h3>
+                    <p>Enter train number, journey date, travel class (SL, 3A, 2A, 1A, CC), quota, current waitlist number, and days left.</p>
+                </div>
+                <div class="step-card">
+                    <div class="step-number">2</div>
+                    <div class="step-icon">🎯</div>
+                    <h3>2. See Chance</h3>
+                    <p>Instant confirmation probability percentage, category (High, Medium, Low), colored progress bar, and reason breakdown.</p>
+                </div>
+                <div class="step-card">
+                    <div class="step-number">3</div>
+                    <div class="step-icon">📈</div>
+                    <h3>3. Track Daily</h3>
+                    <p>Log daily status changes like WL 35 &rarr; WL 24 &rarr; WL 15 and watch your clearance curve drop toward RAC on an interactive chart.</p>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ================= PAGE 2: PREDICT ================= -->
+        <section id="tab-predict" class="tab-content">
+            <div style="margin: 28px 0 20px 0;">
+                <h2>Waitlist Confirmation Estimator</h2>
+                <p style="color: var(--text-muted);">Enter your journey parameters to compute the mathematical probability of getting RAC or Confirmed.</p>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 28px; align-items: start;">
+                <div class="card">
+                    <h3 class="card-title">Enter Ticket Details</h3>
+                    <p class="card-subtitle">Fill in your ticket credentials from your PNR.</p>
+
+                    <form id="predict-form" onsubmit="handlePrediction(event)">
+                        <div class="form-grid-2">
+                            <div class="form-group">
+                                <label class="form-label">Train Number / Name</label>
+                                <input type="text" class="form-control" id="form-train" required placeholder="e.g. 12951 Rajdhani" value="12951">
+                                <div class="form-hint">Try 12951, 12626, 12004</div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Journey Date</label>
+                                <input type="date" class="form-control" id="form-date" required>
+                            </div>
+                        </div>
+
+                        <div class="form-grid-2">
+                            <div class="form-group">
+                                <label class="form-label">Travel Class</label>
+                                <select class="form-select" id="form-class">
+                                    <option value="SL">Sleeper Class (SL)</option>
+                                    <option value="3A" selected>AC 3 Tier (3A)</option>
+                                    <option value="2A">AC 2 Tier (2A)</option>
+                                    <option value="1A">AC First Class (1A)</option>
+                                    <option value="CC">AC Chair Car (CC)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Booking Quota</label>
+                                <select class="form-select" id="form-quota">
+                                    <option value="General" selected>General (GN)</option>
+                                    <option value="Tatkal">Tatkal (TQ)</option>
+                                    <option value="Ladies">Ladies (LD)</option>
+                                    <option value="Senior Citizen">Senior Citizen (SS)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-grid-2">
+                            <div class="form-group">
+                                <label class="form-label">Current Waitlist (WL) Number</label>
+                                <input type="number" class="form-control" id="form-wl" required min="1" max="500" value="15">
+                                <div class="form-hint">Current WL position</div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Days Remaining</label>
+                                <input type="number" class="form-control" id="form-days" required min="0" max="120" value="7">
+                                <div class="form-hint">Days left to departure</div>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary" style="width: 100%;">Calculate Confirmation Chance</button>
+                    </form>
+                </div>
+
+                <!-- Side Banner -->
+                <div class="card" style="padding: 0; overflow: hidden;">
+                    <img src="static/images/predict_platform.jpg" 
+                         onerror="this.src='https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?auto=format&fit=crop&w=800&q=80'"
+                         alt="Railway platform" style="width: 100%; height: 210px; object-fit: cover;">
+                    <div style="padding: 22px;">
+                        <h3 style="font-size: 1.15rem; margin-bottom: 8px;">Key Confirmation Rules</h3>
+                        <p style="font-size: 0.88rem; color: var(--text-secondary); margin-bottom: 10px;">
+                            • <strong>Sleeper &amp; 3A:</strong> Have 10–14 coaches creating high turnover.<br>
+                            • <strong>Tatkal:</strong> Zero cancellation refund means passengers almost never cancel confirmed berths.<br>
+                            • <strong>Charting:</strong> Final charts prepare ~4 hours before train departure.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dynamic Result Card -->
+            <div id="result-container" style="display: none; margin-top: 24px;">
+                <div class="card" style="border: 2px solid var(--border-color);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                        <div>
+                            <span style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">
+                                Prediction Result &bull; <span id="res-train-header">Train 12951</span>
+                            </span>
+                            <div style="display: flex; align-items: baseline; gap: 4px;">
+                                <span id="res-probability" style="font-size: 3.5rem; font-weight: 800; font-family: var(--font-heading); line-height: 1;">85</span>
+                                <span style="font-size: 2rem; font-weight: 700; color: var(--text-muted);">%</span>
+                            </div>
+                        </div>
+                        <div style="text-align: right;">
+                            <span id="res-badge" class="category-badge success">● High Chance (70%+)</span>
+                            <div id="res-submeta" style="font-size: 0.85rem; color: var(--text-muted); margin-top: 6px;">Current: WL 15 &bull; 7 days left</div>
+                        </div>
+                    </div>
+
+                    <div class="progress-container">
+                        <div id="res-progress-fill" class="progress-bar-fill success" style="width: 85%;"></div>
+                    </div>
+
+                    <div style="background: var(--bg-subtle); border-left: 4px solid var(--rail-blue); padding: 14px 18px; border-radius: 4px; margin-bottom: 20px;">
+                        <strong>Insight:</strong> <span id="res-reason">High likelihood driven by healthy cancellation window and manageable WL.</span>
+                    </div>
+
+                    <!-- Formula Breakdown Grid -->
+                    <div class="breakdown-grid" id="res-breakdown-grid"></div>
+
+                    <div style="margin-top: 20px; display: flex; gap: 12px; flex-wrap: wrap;">
+                        <button class="btn btn-primary" onclick="trackCurrentTicket()">Track Daily Movement For This Ticket &rarr;</button>
+                        <button class="btn btn-secondary" onclick="document.getElementById('form-wl').focus()">Test Another Number</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ================= PAGE 3: WL MOVEMENT ================= -->
+        <section id="tab-movement" class="tab-content">
+            <div style="margin: 28px 0 20px 0;">
+                <h2>Waiting-List Daily Movement Tracker</h2>
+                <p style="color: var(--text-muted);">Monitor daily drops on the timeline and interactive Chart.js line progression.</p>
+            </div>
+
+            <!-- Selector Header -->
+            <div class="card" style="padding: 18px 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <label style="font-weight: 700; font-size: 0.95rem;">Select Ticket:</label>
+                    <select id="movement-ticket-select" class="form-select" style="min-width: 280px;" onchange="renderMovementView(parseInt(this.value))"></select>
+                </div>
+                <button class="btn btn-secondary btn-sm" onclick="switchTab('predict')">+ Check New Ticket</button>
+            </div>
+
+            <!-- Timeline Card -->
+            <div class="card">
+                <h3 class="card-title">Progression Timeline</h3>
+                <p class="card-subtitle">Daily status points sequence: e.g. WL 35 &rarr; WL 24 &rarr; WL 15</p>
+                <div class="timeline-flow" id="movement-timeline-flow"></div>
+            </div>
+
+            <!-- Chart & Log Update Form -->
+            <div style="display: grid; grid-template-columns: 1.35fr 0.65fr; gap: 24px; align-items: start;">
+                <div class="card">
+                    <h3 class="card-title">WL Clearance Curve</h3>
+                    <p class="card-subtitle">WL Number vs. Date Progression</p>
+                    <div class="chart-wrapper">
+                        <canvas id="movementChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3 class="card-title" style="font-size: 1.15rem;">Log Today's WL Update</h3>
+                    <p class="card-subtitle" style="font-size: 0.85rem;">Add today's new status point.</p>
+                    <form onsubmit="handleLogUpdate(event)">
+                        <div class="form-group">
+                            <label class="form-label">Date</label>
+                            <input type="date" class="form-control" id="log-date" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">New WL Number</label>
+                            <input type="number" class="form-control" id="log-wl" min="0" max="500" required placeholder="e.g. 10">
+                            <div class="form-hint">Enter 0 for Confirmed / RAC</div>
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="width: 100%;">Save Daily Update</button>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ================= PAGE 4: ANALYTICS ================= -->
+        <section id="tab-analytics" class="tab-content">
+            <div style="margin: 28px 0 20px 0;">
+                <h2>System Analytics &amp; Cancellation Trends</h2>
+                <p style="color: var(--text-muted);">Overview of ticket confirmations, daily cancellations, and dataset statistics.</p>
+            </div>
+
+            <!-- 5 KPI Cards -->
+            <div class="analytics-cards-grid">
+                <div class="analytics-card blue"><div class="number" id="an-total">4</div><div class="title">Total Tickets Checked</div></div>
+                <div class="analytics-card green"><div class="number" id="an-cnf">22</div><div class="title">Confirmed (CNF)</div></div>
+                <div class="analytics-card amber"><div class="number" id="an-rac">8</div><div class="title">RAC Clearances</div></div>
+                <div class="analytics-card red"><div class="number" id="an-waiting">8</div><div class="title">Still Waiting</div></div>
+                <div class="analytics-card purple"><div class="number" id="an-canc">18.4</div><div class="title">Avg Cancellations / Day</div></div>
+            </div>
+
+            <!-- 2 Charts Grid -->
+            <div class="charts-grid">
+                <div class="card">
+                    <h3 class="card-title">Daily Passenger Cancellations</h3>
+                    <p class="card-subtitle">Seats released per day across monitored routes</p>
+                    <div class="chart-wrapper">
+                        <canvas id="cancellationsChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3 class="card-title">Historical Final Outcomes</h3>
+                    <p class="card-subtitle">Confirmed vs RAC vs Waiting share</p>
+                    <div class="chart-wrapper">
+                        <canvas id="outcomesChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Predictions Table -->
+            <div class="card" style="padding: 0; overflow: hidden;">
+                <div style="padding: 18px 24px; background: var(--bg-subtle); border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+                    <h3 style="font-size: 1.15rem; margin: 0;">Recent Tickets Checked</h3>
+                    <button class="btn btn-primary btn-sm" onclick="switchTab('predict')">+ New Ticket</button>
+                </div>
+                <div style="overflow-x: auto;">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Train</th>
+                                <th>Date</th>
+                                <th>Class</th>
+                                <th>Quota</th>
+                                <th>Current WL</th>
+                                <th>Days Left</th>
+                                <th>Probability</th>
+                                <th>Category</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="analytics-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ================= PAGE 5: ABOUT ================= -->
+        <section id="tab-about" class="tab-content">
+            <div style="margin: 28px 0 20px 0;">
+                <h2>About WL Predictor</h2>
+                <p style="color: var(--text-muted);">How the mathematical prediction model works and key railway reservation rules.</p>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 32px; align-items: center; margin-bottom: 28px;">
+                <div>
+                    <h3 style="margin-bottom: 12px;">Explainable Probability Formula</h3>
+                    <p style="color: var(--text-secondary); margin-bottom: 12px;">
+                        Instead of opaque machine learning black-boxes, <strong>WL Predictor</strong> relies on an explainable 6-pillar algorithm mirroring real Indian Railway berth dynamics.
+                    </p>
+                    <p style="color: var(--text-secondary);">
+                        Starting from a neutral 50% baseline, adjustments are made for current queue depth, remaining days for passenger dropouts, recorded daily clearance velocity, coach class capacity, and quota cancellation rules.
+                    </p>
+                </div>
+                <img src="static/images/about_interior.jpg" 
+                     onerror="this.src='https://images.unsplash.com/photo-1563245372-f21724e3856d?auto=format&fit=crop&w=800&q=80'"
+                     alt="Train interior" style="width: 100%; height: 260px; object-fit: cover; border-radius: var(--radius-lg);">
+            </div>
+
+            <div class="steps-grid" style="margin-bottom: 28px;">
+                <div class="step-card">
+                    <h4 style="color: var(--signal-green); margin-bottom: 6px;">High (70%+ Chance)</h4>
+                    <p style="font-size: 0.88rem;">Strong likelihood of reaching RAC or Confirmed before final charting.</p>
+                </div>
+                <div class="step-card">
+                    <h4 style="color: var(--signal-amber); margin-bottom: 6px;">Medium (40% - 69%)</h4>
+                    <p style="font-size: 0.88rem;">Moderate chance. Highly dependent on last-minute chart preparation releases.</p>
+                </div>
+                <div class="step-card">
+                    <h4 style="color: var(--signal-red); margin-bottom: 6px;">Low (Below 40%)</h4>
+                    <p style="font-size: 0.88rem;">Minimal confirmation chance. Alternative travel arrangements recommended.</p>
+                </div>
+            </div>
+
+            <!-- Disclaimer -->
+            <div class="disclaimer-banner">
+                <div style="font-size: 1.6rem;">⚠️</div>
+                <div>
+                    <h4 style="color: #B45309; margin-bottom: 4px;">Important System Disclaimer</h4>
+                    <p style="font-size: 0.92rem; margin: 0;">
+                        <strong>This is an estimate, not a guarantee.</strong> All confirmation probabilities are statistical approximations based on historical booking dynamics. Final seat allocation is exclusively determined by official railway reservation systems.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Rail Track Divider -->
+    <div class="container">
+        <div class="rail-track-divider"><span class="rail-track-badge">Railway Track Line</span></div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+            <div>
+                <strong>WL Predictor</strong> &bull; Railway Waitlist Confirmation & Analytics
+            </div>
+            <div>
+                Disclaimer: This is an estimate, not a guarantee.
+            </div>
+        </div>
+    </footer>
+
+    <!-- ================= JAVASCRIPT LOGIC & STATE ================= -->
+    <script>
+        const DEFAULT_TICKETS = [
+            {
+                id: 1,
+                train_no: "12951",
+                journey_date: "2026-10-25",
+                travel_class: "3A",
+                quota: "General",
+                current_wl: 15,
+                days_left: 8,
+                probability: 88,
+                category: "High",
+                history: [
+                    { date: "2026-10-10", wl: 35 },
+                    { date: "2026-10-11", wl: 28 },
+                    { date: "2026-10-12", wl: 21 },
+                    { date: "2026-10-13", wl: 15 }
+                ]
+            },
+            {
+                id: 2,
+                train_no: "12626",
+                journey_date: "2026-10-28",
+                travel_class: "SL",
+                quota: "General",
+                current_wl: 38,
+                days_left: 14,
+                probability: 64,
+                category: "Medium",
+                history: [
+                    { date: "2026-10-11", wl: 56 },
+                    { date: "2026-10-12", wl: 47 },
+                    { date: "2026-10-13", wl: 38 }
+                ]
+            },
+            {
+                id: 3,
+                train_no: "12004",
+                journey_date: "2026-10-15",
+                travel_class: "CC",
+                quota: "Tatkal",
+                current_wl: 22,
+                days_left: 1,
+                probability: 24,
+                category: "Low",
+                history: [
+                    { date: "2026-10-12", wl: 25 },
+                    { date: "2026-10-13", wl: 22 }
+                ]
+            }
+        ];
+
+        const CANCELLATION_DATA = {
+            dates: ["10-07", "10-08", "10-09", "10-10", "10-11", "10-12", "10-13"],
+            counts: [14, 18, 12, 22, 19, 25, 20]
+        };
+
+        const OUTCOMES_DATA = {
+            labels: ["Confirmed", "RAC", "Waiting"],
+            counts: [22, 8, 8]
+        };
+
+        function getData() {
+            let data = localStorage.getItem("wl_predictor_data");
+            if (!data) {
+                localStorage.setItem("wl_predictor_data", JSON.stringify(DEFAULT_TICKETS));
+                return DEFAULT_TICKETS;
+            }
+            return JSON.parse(data);
+        }
+
+        function saveData(tickets) {
+            localStorage.setItem("wl_predictor_data", JSON.stringify(tickets));
+        }
+
+        let movementChartInstance = null;
+        let cancellationsChartInstance = null;
+        let outcomesChartInstance = null;
+        let activeTicketId = 1;
+
+        function calculatePrediction(trainNo, travelClass, quota, currentWl, daysLeft) {
+            const baseScore = 50;
+            currentWl = Math.max(1, parseInt(currentWl));
+            daysLeft = Math.max(0, parseInt(daysLeft));
+
+            let posScore = 0, posDesc = "";
+            if (currentWl <= 5) { posScore = 25; posDesc = "Single-digit WL position (+25%)"; }
+            else if (currentWl <= 15) { posScore = 15; posDesc = "Low WL position 6-15 (+15%)"; }
+            else if (currentWl <= 30) { posScore = 5; posDesc = "Moderate WL position 16-30 (+5%)"; }
+            else if (currentWl <= 50) { posScore = -8; posDesc = "High WL position 31-50 (-8%)"; }
+            else if (currentWl <= 90) { posScore = -20; posDesc = "Very high WL position 51-90 (-20%)"; }
+            else { posScore = -32; posDesc = "Deep waitlist > 90 (-32%)"; }
+
+            let timeScore = 0, timeDesc = "";
+            if (daysLeft > 15) { timeScore = 15; timeDesc = `${daysLeft} days left - abundant time (+15%)`; }
+            else if (daysLeft >= 7) { timeScore = 10; timeDesc = `${daysLeft} days left - healthy window (+10%)`; }
+            else if (daysLeft >= 3) { timeScore = 4; timeDesc = `${daysLeft} days left - moderate window (+4%)`; }
+            else if (daysLeft === 2) { timeScore = -4; timeDesc = "2 days left - cancellations slowing (-4%)"; }
+            else { timeScore = -18; timeDesc = `${daysLeft} day(s) left - charting imminent (-18%)`; }
+
+            const moveScore = 6;
+            const moveDesc = "Healthy historical clearing (~2.5 drops/day) (+6%)";
+
+            const classMap = { 'SL': 10, '3A': 5, '2A': -5, '1A': -14, 'CC': 2 };
+            const classScore = classMap[travelClass] || 0;
+
+            const quotaMap = { 'General': 5, 'Tatkal': -16, 'Ladies': 2, 'Senior Citizen': 2 };
+            const quotaScore = quotaMap[quota] || 0;
+            const classQuotaScore = classScore + quotaScore;
+
+            const cancScore = 6;
+            const rawTotal = baseScore + posScore + timeScore + moveScore + classQuotaScore + cancScore;
+            const probability = Math.max(1, Math.min(99, rawTotal));
+
+            let category = "Low", badgeColor = "danger";
+            if (probability >= 70) { category = "High"; badgeColor = "success"; }
+            else if (probability >= 40) { category = "Medium"; badgeColor = "warning"; }
+
+            let reason = `${category} likelihood influenced by current WL ${currentWl}, ${daysLeft} days remaining window in ${travelClass} class.`;
+
+            return {
+                probability,
+                category,
+                badgeColor,
+                reason,
+                breakdown: {
+                    baseScore,
+                    posScore, posDesc,
+                    timeScore, timeDesc,
+                    moveScore, moveDesc,
+                    classScore, quotaScore, classQuotaScore,
+                    cancScore, rawTotal
+                }
+            };
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
+
+            const targetSection = document.getElementById('tab-' + tabId);
+            if (targetSection) targetSection.classList.add('active');
+
+            const targetNav = document.getElementById('nav-' + tabId);
+            if (targetNav) targetNav.classList.add('active');
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+
+            if (tabId === 'movement') {
+                renderMovementDropdown();
+                renderMovementView(activeTicketId);
+            } else if (tabId === 'analytics') {
+                renderAnalyticsView();
+            } else if (tabId === 'home') {
+                updateHomeStats();
+            }
+        }
+
+        function handlePrediction(e) {
+            e.preventDefault();
+            const trainNo = document.getElementById('form-train').value.trim();
+            const journeyDate = document.getElementById('form-date').value;
+            const travelClass = document.getElementById('form-class').value;
+            const quota = document.getElementById('form-quota').value;
+            const currentWl = parseInt(document.getElementById('form-wl').value);
+            const daysLeft = parseInt(document.getElementById('form-days').value);
+
+            const pred = calculatePrediction(trainNo, travelClass, quota, currentWl, daysLeft);
+
+            const tickets = getData();
+            const todayStr = new Date().toISOString().split('T')[0];
+            const newId = tickets.length ? Math.max(...tickets.map(t => t.id)) + 1 : 1;
+
+            const newTicket = {
+                id: newId,
+                train_no: trainNo,
+                journey_date: journeyDate,
+                travel_class: travelClass,
+                quota: quota,
+                current_wl: currentWl,
+                days_left: daysLeft,
+                probability: pred.probability,
+                category: pred.category,
+                history: [{ date: todayStr, wl: currentWl }]
+            };
+
+            tickets.unshift(newTicket);
+            saveData(tickets);
+            activeTicketId = newId;
+
+            document.getElementById('res-train-header').textContent = `Train ${trainNo} (${travelClass} - ${quota})`;
+            document.getElementById('res-probability').textContent = pred.probability;
+            document.getElementById('res-probability').style.color = pred.category === 'High' ? 'var(--signal-green)' : (pred.category === 'Medium' ? 'var(--signal-amber)' : 'var(--signal-red)');
+            
+            const badge = document.getElementById('res-badge');
+            badge.className = `category-badge ${pred.badgeColor}`;
+            badge.textContent = `${pred.category} Chance (${pred.probability >= 70 ? '70%+' : (pred.probability >= 40 ? '40-69%' : '<40%')})`;
+
+            document.getElementById('res-submeta').textContent = `Position: WL ${currentWl} • ${daysLeft} days left`;
+            
+            const fill = document.getElementById('res-progress-fill');
+            fill.className = `progress-bar-fill ${pred.badgeColor}`;
+            fill.style.width = pred.probability + '%';
+
+            document.getElementById('res-reason').textContent = pred.reason;
+
+            const b = pred.breakdown;
+            document.getElementById('res-breakdown-grid').innerHTML = `
+                <div class="breakdown-item"><span class="label">1. Baseline Anchor</span><div class="val neu">+${b.baseScore}%</div><div class="desc">Standard neutral median</div></div>
+                <div class="breakdown-item"><span class="label">2. WL Position</span><div class="val ${b.posScore >= 0 ? 'pos' : 'neg'}">${b.posScore >= 0 ? '+' : ''}${b.posScore}%</div><div class="desc">${b.posDesc}</div></div>
+                <div class="breakdown-item"><span class="label">3. Time Window</span><div class="val ${b.timeScore >= 0 ? 'pos' : 'neg'}">${b.timeScore >= 0 ? '+' : ''}${b.timeScore}%</div><div class="desc">${b.timeDesc}</div></div>
+                <div class="breakdown-item"><span class="label">4. Drop Velocity</span><div class="val ${b.moveScore >= 0 ? 'pos' : 'neg'}">+${b.moveScore}%</div><div class="desc">${b.moveDesc}</div></div>
+                <div class="breakdown-item"><span class="label">5. Class & Quota</span><div class="val ${b.classQuotaScore >= 0 ? 'pos' : 'neg'}">${b.classQuotaScore >= 0 ? '+' : ''}${b.classQuotaScore}%</div><div class="desc">${travelClass} (${b.classScore}%), ${quota} (${b.quotaScore}%)</div></div>
+                <div class="breakdown-item"><span class="label">6. Cancellations</span><div class="val pos">+${b.cancScore}%</div><div class="desc">Average network released seats</div></div>
+            `;
+
+            const resContainer = document.getElementById('result-container');
+            resContainer.style.display = 'block';
+            resContainer.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function trackCurrentTicket() {
+            switchTab('movement');
+        }
+
+        function renderMovementDropdown() {
+            const tickets = getData();
+            const select = document.getElementById('movement-ticket-select');
+            select.innerHTML = '';
+            tickets.forEach(t => {
+                const opt = document.createElement('option');
+                opt.value = t.id;
+                opt.textContent = `#${t.id} - Train ${t.train_no} (${t.travel_class} - ${t.quota}) - Current: WL ${t.current_wl}`;
+                if (t.id === activeTicketId) opt.selected = true;
+                select.appendChild(opt);
+            });
+        }
+
+        function renderMovementView(ticketId) {
+            activeTicketId = ticketId;
+            const tickets = getData();
+            const ticket = tickets.find(t => t.id === ticketId) || tickets[0];
+            if (!ticket) return;
+
+            const flow = document.getElementById('movement-timeline-flow');
+            flow.innerHTML = '';
+            ticket.history.forEach((h, idx) => {
+                const isLast = idx === ticket.history.length - 1;
+                const node = document.createElement('div');
+                node.className = `timeline-node ${isLast ? 'latest' : ''}`;
+                node.innerHTML = `<div class="wl-val">WL ${h.wl}</div><div class="date">${h.date}</div>`;
+                flow.appendChild(node);
+
+                if (!isLast) {
+                    const arrow = document.createElement('div');
+                    arrow.className = 'timeline-arrow';
+                    arrow.innerHTML = '&rarr;';
+                    flow.appendChild(arrow);
+                }
+            });
+
+            document.getElementById('log-date').value = new Date().toISOString().split('T')[0];
+            document.getElementById('log-wl').value = Math.max(0, ticket.current_wl - 2);
+
+            renderMovementChart(ticket);
+        }
+
+        function renderMovementChart(ticket) {
+            const ctx = document.getElementById('movementChart').getContext('2d');
+            if (movementChartInstance) movementChartInstance.destroy();
+
+            movementChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ticket.history.map(h => h.date),
+                    datasets: [{
+                        label: 'Waitlist Number',
+                        data: ticket.history.map(h => h.wl),
+                        borderColor: '#0B3C5D',
+                        backgroundColor: 'rgba(11, 60, 93, 0.08)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.3,
+                        pointBackgroundColor: '#2E7D32',
+                        pointRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { callback: val => 'WL ' + val }
+                        }
+                    }
+                }
+            });
+        }
+
+        function handleLogUpdate(e) {
+            e.preventDefault();
+            const date = document.getElementById('log-date').value;
+            const wl = parseInt(document.getElementById('log-wl').value);
+
+            const tickets = getData();
+            const ticket = tickets.find(t => t.id === activeTicketId);
+            if (!ticket) return;
+
+            ticket.history.push({ date, wl });
+            ticket.current_wl = wl;
+            saveData(tickets);
+
+            renderMovementView(activeTicketId);
+            alert(`Logged WL ${wl} for ${date} successfully!`);
+        }
+
+        function renderAnalyticsView() {
+            const tickets = getData();
+            document.getElementById('an-total').textContent = tickets.length;
+
+            const tbody = document.getElementById('analytics-table-body');
+            tbody.innerHTML = '';
+            tickets.forEach(t => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><strong>${t.train_no}</strong></td>
+                    <td>${t.journey_date}</td>
+                    <td><span style="font-weight: 600; color: var(--rail-blue);">${t.travel_class}</span></td>
+                    <td>${t.quota}</td>
+                    <td><strong style="color: var(--rail-blue-dark);">WL ${t.current_wl}</strong></td>
+                    <td>${t.days_left}d</td>
+                    <td><strong style="color: ${t.category === 'High' ? 'var(--signal-green)' : (t.category === 'Medium' ? 'var(--signal-amber)' : 'var(--signal-red)')};">${t.probability}%</strong></td>
+                    <td><span class="category-badge ${t.category === 'High' ? 'success' : (t.category === 'Medium' ? 'warning' : 'danger')}" style="padding: 2px 8px; font-size: 0.75rem;">${t.category}</span></td>
+                    <td><button class="btn btn-secondary btn-sm" onclick="activeTicketId=${t.id}; switchTab('movement');">Track &rarr;</button></td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            const cancCtx = document.getElementById('cancellationsChart').getContext('2d');
+            if (cancellationsChartInstance) cancellationsChartInstance.destroy();
+            cancellationsChartInstance = new Chart(cancCtx, {
+                type: 'bar',
+                data: {
+                    labels: CANCELLATION_DATA.dates,
+                    datasets: [{
+                        label: 'Released Berths',
+                        data: CANCELLATION_DATA.counts,
+                        backgroundColor: '#1D5D8A',
+                        borderRadius: 6
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+
+            const outCtx = document.getElementById('outcomesChart').getContext('2d');
+            if (outcomesChartInstance) outcomesChartInstance.destroy();
+            outcomesChartInstance = new Chart(outCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: OUTCOMES_DATA.labels,
+                    datasets: [{
+                        data: OUTCOMES_DATA.counts,
+                        backgroundColor: ['#2E7D32', '#E65100', '#D32F2F'],
+                        borderWidth: 2
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        }
+
+        function updateHomeStats() {
+            const tickets = getData();
+            document.getElementById('home-total-tickets').textContent = tickets.length;
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const today = new Date();
+            const future = new Date(today);
+            future.setDate(today.getDate() + 7);
+            document.getElementById('form-date').value = future.toISOString().split('T')[0];
+            updateHomeStats();
+        });
+    </script>
+</body>
+</html>

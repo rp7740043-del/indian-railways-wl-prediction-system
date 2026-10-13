@@ -1,0 +1,132 @@
+{% extends 'base.html' %}
+
+{% block title %}About &amp; Prediction Methodology — WL Predictor{% endblock %}
+
+{% block content %}
+<div class="section-header" style="text-align: left; margin-top: 28px; margin-bottom: 24px;">
+    <h2>About WL Predictor</h2>
+    <p>Understanding the mathematical model and real-world factors behind railway waitlist confirmation.</p>
+</div>
+
+<!-- Hero Grid with Train Interior Image -->
+<div class="about-hero-grid" id="aboutHeroGrid">
+    <div>
+        <h3 style="font-size: 1.6rem; color: var(--rail-blue-dark); margin-bottom: 14px;">
+            Demystifying Waitlist Uncertainty
+        </h3>
+        <p style="color: var(--text-secondary); margin-bottom: 14px; font-size: 1rem; line-height: 1.7;">
+            When booking Indian Railways tickets, passengers frequently receive a waiting list status (WL) rather than a confirmed berth. Travelers are often left guessing whether their ticket has a realistic chance of confirming before the train pulls away from the station.
+        </p>
+        <p style="color: var(--text-secondary); font-size: 1rem; line-height: 1.7;">
+            <strong>WL Predictor</strong> is built as an open, educational platform that analyzes historical ticket movement velocity, seat inventory across coach classes, quota cancellation rules, and remaining days to deliver transparent, explainable confirmation estimates.
+        </p>
+    </div>
+
+    <div>
+        <img src="{{ url_for('static', filename='images/about_interior.jpg') }}" alt="Modern passenger train interior cabin with panoramic windows" class="about-img" loading="lazy">
+    </div>
+</div>
+
+<!-- Prediction Factors Section -->
+<div class="section-header" style="text-align: left; margin-top: 40px; margin-bottom: 20px;">
+    <h3>The 6 Scoring Pillars</h3>
+    <p>Our algorithm follows a structured mathematical framework designed to be 100% explainable:</p>
+</div>
+
+<div class="factors-grid">
+    <div class="factor-card">
+        <div class="factor-num">Pillar 1</div>
+        <h3>Baseline Anchor (50%)</h3>
+        <p>Every prediction starts with a balanced neutral base score of 50%, serving as the statistical median before individual ticket conditions are factored in.</p>
+    </div>
+
+    <div class="factor-card">
+        <div class="factor-num">Pillar 2</div>
+        <h3>Current Position Impact</h3>
+        <p>A lower waiting list number increases the score significantly (+25% for WL 1-5), whereas deep waitlists (&gt;90) face heavy mathematical penalties (-32%).</p>
+    </div>
+
+    <div class="factor-card">
+        <div class="factor-num">Pillar 3</div>
+        <h3>Time Remaining Window</h3>
+        <p>More days remaining allow more passengers to cancel plans (+15% for &gt;15 days). Conversely, tickets with &le;1 day left incur penalties (-18%) due to chart preparation.</p>
+    </div>
+
+    <div class="factor-card">
+        <div class="factor-num">Pillar 4</div>
+        <h3>Daily Clearance Velocity</h3>
+        <p>Computes the average daily drop from historical status tracking. Fast-moving waitlists (+16%) confirm much quicker than sluggish or stagnant queues.</p>
+    </div>
+
+    <div class="factor-card">
+        <div class="factor-num">Pillar 5</div>
+        <h3>Class &amp; Quota Quirks</h3>
+        <p>Sleeper (+10%) and 3A (+5%) have many coaches and high turnover. Tatkal (-16%) and 1A (-14%) have low cancellations due to strict refund rules and limited berths.</p>
+    </div>
+
+    <div class="factor-card">
+        <div class="factor-num">Pillar 6</div>
+        <h3>Historical Cancellations</h3>
+        <p>Monitors route-specific daily cancellation rates from the database to reflect seasonal travel fluctuations and peak-period seat releases.</p>
+    </div>
+</div>
+
+<!-- Category Thresholds -->
+<div class="card" style="margin-top: 24px; margin-bottom: 30px;">
+    <h3 class="card-title">Confirmation Probability Categories</h3>
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 18px;">
+        <div style="padding: 18px; border-radius: 10px; background: var(--signal-green-bg); border-left: 5px solid var(--signal-green);">
+            <h4 style="color: var(--signal-green); margin-bottom: 6px;">High (70%+ Chance)</h4>
+            <p style="font-size: 0.9rem; color: #1B5E20; margin: 0;">Very high likelihood of securing RAC or a confirmed berth before train departure.</p>
+        </div>
+
+        <div style="padding: 18px; border-radius: 10px; background: var(--signal-amber-bg); border-left: 5px solid var(--signal-amber);">
+            <h4 style="color: var(--signal-amber); margin-bottom: 6px;">Medium (40% - 69%)</h4>
+            <p style="font-size: 0.9rem; color: #E65100; margin: 0;">Moderate clearing potential. Usually progresses to RAC by final charting.</p>
+        </div>
+
+        <div style="padding: 18px; border-radius: 10px; background: var(--signal-red-bg); border-left: 5px solid var(--signal-red);">
+            <h4 style="color: var(--signal-red); margin-bottom: 6px;">Low (Below 40%)</h4>
+            <p style="font-size: 0.9rem; color: #B71C1C; margin: 0;">Low probability. Highly recommended to explore alternative travel dates or buses.</p>
+        </div>
+    </div>
+</div>
+
+<!-- Prominent Disclaimer Box -->
+<div class="disclaimer-banner" id="disclaimerBanner">
+    <div class="disclaimer-icon">⚠️</div>
+    <div>
+        <h4 style="font-size: 1.15rem; margin-bottom: 6px; color: #B45309;">Important System Disclaimer</h4>
+        <p style="font-size: 0.92rem; line-height: 1.6; margin: 0;">
+            <strong>This is an estimate, not a guarantee.</strong> All confirmation probabilities generated by WL Predictor are calculated using statistical approximations and historical trends. Final seat allocations, RAC assignments, and chart releases are handled exclusively by official railway ticketing systems and cannot be guaranteed by any third-party tool.
+        </p>
+    </div>
+</div>
+
+<!-- FAQ Section -->
+<div class="card" style="margin-bottom: 36px;">
+    <h3 class="card-title" style="margin-bottom: 18px;">Frequently Asked Questions</h3>
+
+    <div style="margin-bottom: 18px;">
+        <h4 style="font-size: 1.05rem; color: var(--rail-blue-dark); margin-bottom: 4px;">What does RAC mean?</h4>
+        <p style="font-size: 0.92rem; color: var(--text-secondary); margin: 0;">
+            RAC stands for <em>Reservation Against Cancellation</em>. An RAC passenger is guaranteed travel on the train and is allocated a sitting berth (shared side-lower berth) which may upgrade to a full sleeper berth if further cancellations occur.
+        </p>
+    </div>
+
+    <div style="margin-bottom: 18px; padding-top: 14px; border-top: 1px solid var(--border-light);">
+        <h4 style="font-size: 1.05rem; color: var(--rail-blue-dark); margin-bottom: 4px;">When are railway reservation charts prepared?</h4>
+        <p style="font-size: 0.92rem; color: var(--text-secondary); margin: 0;">
+            The initial reservation chart is typically prepared 4 hours prior to the train's scheduled departure from originating station. A final chart is published approximately 30 minutes before departure.
+        </p>
+    </div>
+
+    <div style="padding-top: 14px; border-top: 1px solid var(--border-light);">
+        <h4 style="font-size: 1.05rem; color: var(--rail-blue-dark); margin-bottom: 4px;">Why do Tatkal waitlists confirm less frequently?</h4>
+        <p style="font-size: 0.92rem; color: var(--text-secondary); margin: 0;">
+            Confirmed Tatkal tickets grant zero refund upon cancellation. Because passengers forfeit the entire fare if they cancel, almost nobody cancels confirmed Tatkal tickets, leaving few vacancies for Tatkal waitlists.
+        </p>
+    </div>
+</div>
+
+{% endblock %}

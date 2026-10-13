@@ -1,0 +1,225 @@
+{% extends 'base.html' %}
+
+{% block title %}Predict Waitlist Confirmation — WL Predictor{% endblock %}
+
+{% block content %}
+<div class="section-header" style="text-align: left; margin-top: 28px; margin-bottom: 24px;">
+    <h2>Waitlist Confirmation Estimator</h2>
+    <p>Enter your train and ticket details below to calculate the mathematical probability of getting RAC or Confirmed.</p>
+</div>
+
+<div class="predict-layout">
+    <!-- Left Column: Form -->
+    <div class="card" id="predictFormCard">
+        <h3 class="card-title">Enter Ticket Details</h3>
+        <p class="card-subtitle">Fill in the current waiting list details as printed on your PNR or IRCTC booking.</p>
+
+        <form action="{{ url_for('predict') }}" method="POST" id="wlPredictForm">
+            <!-- Train Number & Journey Date -->
+            <div class="form-grid-2">
+                <div class="form-group">
+                    <label for="train_no" class="form-label">Train Number / Name</label>
+                    <input type="text" class="form-control" id="train_no" name="train_no" required
+                           placeholder="e.g. 12951 or Rajdhani"
+                           value="{{ form_data.train_no if form_data else '12951' }}">
+                    <div class="form-hint">Try: 12951 (Rajdhani), 12626 (Kerala Exp), 12004 (Shatabdi)</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="journey_date" class="form-label">Journey Date</label>
+                    <input type="date" class="form-control" id="journey_date" name="journey_date" required
+                           value="{{ form_data.journey_date if form_data else default_date }}">
+                    <div class="form-hint">Date of scheduled departure</div>
+                </div>
+            </div>
+
+            <!-- Travel Class & Quota -->
+            <div class="form-grid-2">
+                <div class="form-group">
+                    <label for="travel_class" class="form-label">Travel Class</label>
+                    <select class="form-select" id="travel_class" name="travel_class" required>
+                        <option value="SL" {% if form_data.travel_class == 'SL' %}selected{% endif %}>Sleeper Class (SL)</option>
+                        <option value="3A" {% if form_data.travel_class == '3A' or not form_data %}selected{% endif %}>AC 3 Tier (3A)</option>
+                        <option value="2A" {% if form_data.travel_class == '2A' %}selected{% endif %}>AC 2 Tier (2A)</option>
+                        <option value="1A" {% if form_data.travel_class == '1A' %}selected{% endif %}>AC First Class (1A)</option>
+                        <option value="CC" {% if form_data.travel_class == 'CC' %}selected{% endif %}>AC Chair Car (CC)</option>
+                    </select>
+                    <div class="form-hint">SL has highest berth turnover; 1A has least.</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="quota" class="form-label">Booking Quota</label>
+                    <select class="form-select" id="quota" name="quota" required>
+                        <option value="General" {% if form_data.quota == 'General' or not form_data %}selected{% endif %}>General (GN)</option>
+                        <option value="Tatkal" {% if form_data.quota == 'Tatkal' %}selected{% endif %}>Tatkal (TQ)</option>
+                        <option value="Ladies" {% if form_data.quota == 'Ladies' %}selected{% endif %}>Ladies (LD)</option>
+                        <option value="Senior Citizen" {% if form_data.quota == 'Senior Citizen' %}selected{% endif %}>Senior Citizen (SS)</option>
+                    </select>
+                    <div class="form-hint">Tatkal WL has strict no-refund penalties on CNF.</div>
+                </div>
+            </div>
+
+            <!-- Current WL Number & Days Left -->
+            <div class="form-grid-2">
+                <div class="form-group">
+                    <label for="current_wl" class="form-label">Current Waiting-List (WL) Number</label>
+                    <input type="number" class="form-control" id="current_wl" name="current_wl" min="1" max="500" required
+                           placeholder="e.g. 15"
+                           value="{{ form_data.current_wl if form_data else '15' }}">
+                    <div class="form-hint">Current waitlist position (e.g. 15 for WL 15)</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="days_left" class="form-label">Days Remaining Until Journey</label>
+                    <input type="number" class="form-control" id="days_left" name="days_left" min="0" max="120" required
+                           placeholder="e.g. 7"
+                           value="{{ form_data.days_left if form_data else '7' }}">
+                    <div class="form-hint">Days left for passenger cancellations</div>
+                </div>
+            </div>
+
+            <div style="margin-top: 10px;">
+                <button type="submit" class="btn btn-primary" id="btnSubmitPredict" style="width: 100%; font-size: 1.05rem;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <span>Calculate Confirmation Chance</span>
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Right Column: Side Banner with Platform Image -->
+    <div>
+        <div class="side-banner-card">
+            <img src="{{ url_for('static', filename='images/predict_platform.jpg') }}" alt="Modern railway platform with express train" class="side-banner-img" loading="lazy">
+            <div class="side-banner-content">
+                <h3>Smart Journey Insights</h3>
+                <p style="color: var(--text-secondary); font-size: 0.92rem;">
+                    Waiting-list confirmation depends heavily on travel class coach counts and quota cancellation behaviors:
+                </p>
+                <ul class="quick-tips-list">
+                    <li><strong>Sleeper &amp; 3A:</strong> Consist of 10 to 14 coaches per rake, creating ample passenger cancellations.</li>
+                    <li><strong>Tatkal Quota:</strong> Rarely clears high waitlists because passengers incur full loss on cancelling confirmed Tatkal tickets.</li>
+                    <li><strong>Final Charting:</strong> Reservation charts are generated roughly 4 hours prior to departure, releasing unutilized quotas.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Result Card (Shown after calculation) -->
+{% if result %}
+<div class="result-card" id="predictionResultCard">
+    <div class="result-header">
+        <div>
+            <span style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;">
+                Prediction Result &bull; Train {{ result.train_no }} ({{ result.travel_class }} - {{ result.quota }})
+            </span>
+            <div class="result-percentage-wrap">
+                <span class="result-percentage" style="color: {% if result.category == 'High' %}var(--signal-green){% elif result.category == 'Medium' %}var(--signal-amber){% else %}var(--signal-red){% endif %};">
+                    {{ result.probability }}
+                </span>
+                <span class="result-percentage-symbol">%</span>
+            </div>
+        </div>
+
+        <div style="text-align: right;">
+            <div class="category-badge {{ result.badge_color }}" id="resultCategoryBadge">
+                {% if result.category == 'High' %}
+                    ● High Chance (70%+)
+                {% elif result.category == 'Medium' %}
+                    ▲ Medium Chance (40-69%)
+                {% else %}
+                    ▼ Low Chance (&lt;40%)
+                {% endif %}
+            </div>
+            <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 6px;">
+                Current Position: <strong>WL {{ result.current_wl }}</strong> &bull; <strong>{{ result.days_left }} days left</strong>
+            </div>
+        </div>
+    </div>
+
+    <!-- Animated Colored Progress Bar -->
+    <div class="progress-container">
+        <div class="progress-bar-fill {{ result.badge_color }}" style="width: {{ result.probability }}%;"></div>
+    </div>
+
+    <!-- One-line Reason -->
+    <div class="result-reason-box">
+        <strong>Insight:</strong> {{ result.reason }}
+    </div>
+
+    <!-- Formula Breakdown Grid -->
+    <div class="formula-breakdown-box">
+        <div class="formula-breakdown-title">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="16" y1="14" x2="16" y2="18"/><path d="M8 10h.01"/><path d="M12 10h.01"/><path d="M16 10h.01"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M8 18h.01"/><path d="M12 18h.01"/></svg>
+            <span>Formula Breakdown &amp; Scoring Factors</span>
+        </div>
+
+        <div class="breakdown-grid">
+            <div class="breakdown-item">
+                <span class="label">1. Baseline Score</span>
+                <span class="val neu">+50%</span>
+                <span class="desc">Standard baseline probability anchor</span>
+            </div>
+
+            <div class="breakdown-item">
+                <span class="label">2. WL Position Impact</span>
+                <span class="val {% if result.breakdown.position_score >= 0 %}pos{% else %}neg{% endif %}">
+                    {% if result.breakdown.position_score >= 0 %}+{% endif %}{{ result.breakdown.position_score }}%
+                </span>
+                <span class="desc">{{ result.breakdown.position_desc }}</span>
+            </div>
+
+            <div class="breakdown-item">
+                <span class="label">3. Time Remaining</span>
+                <span class="val {% if result.breakdown.time_score >= 0 %}pos{% else %}neg{% endif %}">
+                    {% if result.breakdown.time_score >= 0 %}+{% endif %}{{ result.breakdown.time_score }}%
+                </span>
+                <span class="desc">{{ result.breakdown.time_desc }}</span>
+            </div>
+
+            <div class="breakdown-item">
+                <span class="label">4. Daily Clearance Velocity</span>
+                <span class="val {% if result.breakdown.movement_score >= 0 %}pos{% else %}neg{% endif %}">
+                    {% if result.breakdown.movement_score >= 0 %}+{% endif %}{{ result.breakdown.movement_score }}%
+                </span>
+                <span class="desc">{{ result.breakdown.movement_desc }}</span>
+            </div>
+
+            <div class="breakdown-item">
+                <span class="label">5. Class &amp; Quota Factor</span>
+                <span class="val {% if result.breakdown.class_quota_score >= 0 %}pos{% else %}neg{% endif %}">
+                    {% if result.breakdown.class_quota_score >= 0 %}+{% endif %}{{ result.breakdown.class_quota_score }}%
+                </span>
+                <span class="desc">Class ({{ result.travel_class }}): {{ result.breakdown.class_score }}%, Quota ({{ result.quota }}): {{ result.breakdown.quota_score }}%</span>
+            </div>
+
+            <div class="breakdown-item">
+                <span class="label">6. Cancellation History</span>
+                <span class="val {% if result.breakdown.cancellation_score >= 0 %}pos{% else %}neg{% endif %}">
+                    {% if result.breakdown.cancellation_score >= 0 %}+{% endif %}{{ result.breakdown.cancellation_score }}%
+                </span>
+                <span class="desc">Avg {{ result.breakdown.avg_cancellations }} cancellations/day on this line</span>
+            </div>
+        </div>
+
+        <div style="margin-top: 16px; padding-top: 14px; border-top: 1px dashed var(--border-color); display: flex; justify-content: space-between; align-items: center; font-size: 0.92rem;">
+            <span><strong>Raw Sum:</strong> {{ result.breakdown.raw_total }}% &rarr; <em>Clamped mathematically between 1% and 99%</em></span>
+            <span style="font-weight: 700; color: var(--rail-blue-dark);">Final Prediction: {{ result.probability }}%</span>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div style="display: flex; gap: 14px; flex-wrap: wrap;">
+        <a href="{{ url_for('movement', ticket_id=result.ticket_id) }}" class="btn btn-primary" id="btnTrackMovementResult">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            <span>Track Daily Movement For This Ticket</span>
+        </a>
+        <a href="{{ url_for('predict') }}" class="btn btn-secondary">
+            <span>Check Another Ticket</span>
+        </a>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}

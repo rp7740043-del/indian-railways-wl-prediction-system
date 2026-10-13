@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}WL Predictor — Railway Waitlist Confirmation & Analytics{% endblock %}</title>
+    <meta name="description" content="Estimate railway waitlist confirmation probabilities, track daily WL clearance movement, and explore railway cancellation analytics.">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+    <!-- Top Announcement Strip -->
+    <div class="top-notice-strip">
+        <div class="container">
+            <span>Statistical Railway Waitlist Prediction System &bull; <strong class="highlight">Estimate, Not A Guarantee</strong> &bull; Free &amp; Open Educational Tool</span>
+        </div>
+    </div>
+
+    <!-- Navigation Bar -->
+    <nav class="navbar" id="mainNavbar">
+        <div class="container nav-container">
+            <a href="{{ url_for('home') }}" class="brand-logo" id="brandLogo">
+                <!-- Original Clean Train Locomotive SVG -->
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="4" y="3" width="16" height="16" rx="3"/>
+                    <path d="M4 11h16"/>
+                    <circle cx="8" cy="15" r="1"/>
+                    <circle cx="16" cy="15" r="1"/>
+                    <path d="M8 3v-1"/>
+                    <path d="M16 3v-1"/>
+                    <path d="M7 21l-3 1"/>
+                    <path d="M17 21l3 1"/>
+                    <path d="M6 19h12"/>
+                </svg>
+                <span>WL<span class="accent">Predictor</span></span>
+            </a>
+
+            <ul class="nav-links">
+                <li><a href="{{ url_for('home') }}" class="nav-link {% if request.endpoint == 'home' %}active{% endif %}" id="navHome">Home</a></li>
+                <li><a href="{{ url_for('predict') }}" class="nav-link {% if request.endpoint == 'predict' %}active{% endif %}" id="navPredict">Predict Ticket</a></li>
+                <li><a href="{{ url_for('movement') }}" class="nav-link {% if request.endpoint == 'movement' %}active{% endif %}" id="navMovement">WL Movement</a></li>
+                <li><a href="{{ url_for('analytics') }}" class="nav-link {% if request.endpoint == 'analytics' %}active{% endif %}" id="navAnalytics">Analytics</a></li>
+                <li><a href="{{ url_for('about') }}" class="nav-link {% if request.endpoint == 'about' %}active{% endif %}" id="navAbout">About</a></li>
+                <li><a href="{{ url_for('predict') }}" class="nav-link nav-btn-highlight" id="navCheckCta">Check My Ticket</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="container">
+        <!-- Flash Notification Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-container" id="flashMessages">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">
+                            {% if category == 'success' %}
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                            {% elif category == 'danger' %}
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                            {% else %}
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                            {% endif %}
+                            <span>{{ message }}</span>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Railway Track Line Divider Motif -->
+    <div class="container">
+        <div class="rail-track-divider">
+            <span class="rail-track-badge">Railway Track Line</span>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer" id="mainFooter">
+        <div class="container">
+            <div class="footer-grid">
+                <div>
+                    <div class="footer-brand">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="4" y="3" width="16" height="16" rx="3"/>
+                            <path d="M4 11h16"/>
+                            <circle cx="8" cy="15" r="1"/>
+                            <circle cx="16" cy="15" r="1"/>
+                            <path d="M6 19h12"/>
+                        </svg>
+                        <span>WL Predictor</span>
+                    </div>
+                    <p style="margin-bottom: 14px; line-height: 1.6;">
+                        A beginner-friendly railway waiting-list confirmation estimator and daily clearance analytics system built with Python Flask, SQLite, and Chart.js.
+                    </p>
+                    <p style="font-size: 0.8rem; color: #E2E8F0; background: rgba(255,255,255,0.08); padding: 8px 12px; border-radius: 6px; display: inline-block;">
+                        &bull; Disclaimer: This is an estimate, not a guarantee.
+                    </p>
+                </div>
+
+                <div>
+                    <h4 style="color: #FFFFFF; margin-bottom: 16px; font-size: 1.1rem;">Quick Navigation</h4>
+                    <ul class="footer-links">
+                        <li><a href="{{ url_for('home') }}">Home Page</a></li>
+                        <li><a href="{{ url_for('predict') }}">Check Waiting List</a></li>
+                        <li><a href="{{ url_for('movement') }}">Daily Status Movement</a></li>
+                        <li><a href="{{ url_for('analytics') }}">System Analytics</a></li>
+                        <li><a href="{{ url_for('about') }}">Prediction Logic &amp; About</a></li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h4 style="color: #FFFFFF; margin-bottom: 16px; font-size: 1.1rem;">Prediction Standards</h4>
+                    <ul class="footer-links" style="color: #94A3B8; font-size: 0.88rem;">
+                        <li><strong style="color: #4CAF50;">High (70%+):</strong> Strong RAC/CNF probability</li>
+                        <li><strong style="color: #FF9800;">Medium (40-69%):</strong> Moderate clearing likelihood</li>
+                        <li><strong style="color: #F44336;">Low (&lt;40%):</strong> Alternative plan recommended</li>
+                        <li style="margin-top: 10px; color: #CBD5E1;">Chart preparation ~4 hrs before departure</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="footer-bottom">
+                <p>&copy; 2026 WL Predictor System &bull; Designed for Indian Railways Waitlist Research &bull; Original &amp; Free Platform</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Chart.js and Custom Scripts -->
+    <script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>
